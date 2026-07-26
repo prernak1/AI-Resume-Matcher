@@ -78,7 +78,29 @@
     .upload-zone h2     { font-size: 1.25rem; color: #4f46e5; font-weight: 700; margin-bottom: .4rem; }
     .upload-zone p      { font-size: .875rem; color: #6b7280; }
     .upload-zone .hint  { margin-top: .75rem; font-size: .78rem; color: #a5b4fc; }
-    #fileInput          { display: none; }
+
+    .company-row {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .4rem;
+    }
+    .company-row label { font-size: .85rem; color: #6b7280; font-weight: 600; }
+    .company-row input {
+      width: 280px;
+      padding: .5rem .9rem;
+      border: 1.5px solid #c7d2fe;
+      border-radius: 9px;
+      font-size: .9rem;
+      outline: none;
+      text-align: center;
+      transition: border-color .15s;
+    }
+    .company-row input:focus { border-color: #4f46e5; }
+    .company-hint { font-size: .74rem; color: #a5b4fc; }
+    .company-hint code { font-family: monospace; }
+    #fileInput { display: none; }
 
     /* ── Error ── */
     .error-box {
@@ -361,6 +383,19 @@
     <h2>Drop your resume here</h2>
     <p>Drag &amp; drop a PDF, or <strong>click to browse</strong></p>
     <p class="hint">PDF only &nbsp;·&nbsp; Max 5 MB</p>
+
+    <div class="company-row">
+      <label for="companyInput">🏢 Greenhouse board token</label>
+      <input
+        type="text"
+        id="companyInput"
+        placeholder="e.g. stripe, airbnb, github, shopify"
+        spellcheck="false"
+        autocomplete="off"
+      />
+      <span class="company-hint">Find it at <code>boards.greenhouse.io/<strong>{token}</strong></code></span>
+    </div>
+
     <input type="file" id="fileInput" accept=".pdf" />
   </div>
 
@@ -382,7 +417,8 @@
     <div style="display:flex;gap:2rem;flex-wrap:wrap">
       <div class="stats-item">
         <span class="stats-num" id="statMatches">0</span>
-        <span>jobs matched</span>
+        <span>matches on</span>
+        <span class="stats-num" id="statCompany" style="font-size:.95rem">—</span>
       </div>
       <div class="stats-item">
         <span class="stats-num" id="statSkills">0</span>
@@ -476,8 +512,11 @@
     const form = new FormData();
     form.append('file', file);
 
+    const company = document.getElementById('companyInput').value.trim();
+    const url = `/api/resume/match?topN=10${company ? '&company=' + encodeURIComponent(company) : ''}`;
+
     try {
-      const res = await fetch('/api/resume/match?topN=10', { method: 'POST', body: form });
+      const res = await fetch(url, { method: 'POST', body: form });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
         throw new Error(err?.title ?? `Server error ${res.status}`);
@@ -503,6 +542,9 @@
     document.getElementById('statSkills').textContent  = data.analysis.skills.length;
     document.getElementById('statExp').textContent     =
       data.analysis.yearsOfExperience > 0 ? data.analysis.yearsOfExperience + '+' : '—';
+    const companyLabel = data.company && data.company !== '(configured default)'
+      ? data.company : document.getElementById('companyInput').value.trim() || 'jobs';
+    document.getElementById('statCompany').textContent = companyLabel;
     statsBar.classList.add('visible');
 
     // Animate bars after next paint

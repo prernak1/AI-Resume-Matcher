@@ -120,7 +120,14 @@ public sealed class GreenhouseJobRepository : IJobRepository
     // Private helpers
     // ---------------------------------------------------------------
 
+    // Allow per-request board token override (e.g. ?company=airbnb from the UI)
+    public async Task<IReadOnlyList<Job>> GetAllAsync(string boardToken, CancellationToken cancellationToken = default)
+        => await FetchFromGreenhouseAsync(boardToken, cancellationToken);
+
     private async Task<IReadOnlyList<Job>> FetchFromGreenhouseAsync(CancellationToken ct)
+        => await FetchFromGreenhouseAsync(_boardToken, ct);
+
+    private async Task<IReadOnlyList<Job>> FetchFromGreenhouseAsync(string boardToken, CancellationToken ct)
     {
         var http = _httpFactory.CreateClient("Greenhouse");
 
@@ -128,7 +135,7 @@ public sealed class GreenhouseJobRepository : IJobRepository
         try
         {
             response = await http.GetFromJsonAsync<GreenhouseResponse>(
-                $"v1/boards/{_boardToken}/jobs?content=true",
+                $"v1/boards/{Uri.EscapeDataString(boardToken)}/jobs?content=true",
                 ct);
         }
         catch
@@ -152,12 +159,22 @@ public sealed class GreenhouseJobRepository : IJobRepository
         var plainText = StripHtml(ghJob.Content ?? string.Empty);
         var (required, preferred) = ExtractSkills(plainText);
 
-        // Build a concise description: location + department if available
+        // Resolve the best available location:
+        // Some boards put "Remote" in location.name and the real city in metadata.
+        var location = ResolveLocation(ghJob);
+        var isRemote = IsRemoteJob(ghJob);
         var dept = ghJob.Departments?.FirstOrDefault()?.Name;
-        var location = ghJob.Location?.Name;
+
         var desc = ghJob.Content is not null ? TruncatePlainText(plainText, 300) : ghJob.Title ?? string.Empty;
-        if (!string.IsNullOrEmpty(location)) desc = $"[{location}] {desc}";
-        if (!string.IsNullOrEmpty(dept)) desc = $"({dept}) {desc}";
+
+        // Build prefix: (Dept) [Location · Remote]
+        var locParts = new List<string>();
+        if (!string.IsNullOrEmpty(location)) locParts.Add(location);
+        if (isRemote && !location.Contains("Remote", StringComparison.OrdinalIgnoreCase)) locParts.Add("Remote");
+        var locLabel = string.Join(" · ", locParts);
+
+        if (!string.IsNullOrEmpty(locLabel)) desc = $"[{locLabel}] {desc}";
+        if (!string.IsNullOrEmpty(dept))     desc = $"({dept}) {desc}";
 
         return Job.Create(
             title: ghJob.Title!,
@@ -165,6 +182,42 @@ public sealed class GreenhouseJobRepository : IJobRepository
             requiredSkills: required,
             preferredSkills: preferred,
             applyUrl: ghJob.AbsoluteUrl);
+    }
+
+    // ---------------------------------------------------------------
+    // Location helpers (ported from the Greenhouse integration article)
+    // https://medium.com/@sevicdev/integration-with-greenhouse-public-jobs-api-b548b23ad867
+    // ---------------------------------------------------------------
+
+    private static readonly Regex WorkModePattern =
+        new(@"^(remote|hybrid|on-?site|in-?office)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static string ResolveLocation(GreenhouseJob job)
+    {
+        var primary = job.Location?.Name?.Trim() ?? string.Empty;
+        var fromMeta = ExtractMetadataLocation(job.Metadata);
+
+        // Prefer metadata city when the primary field is only a work-mode label
+        if (!string.IsNullOrEmpty(fromMeta) &&
+            (string.IsNullOrEmpty(primary) || WorkModePattern.IsMatch(primary)))
+            return fromMeta;
+
+        return !string.IsNullOrEmpty(primary) ? primary : fromMeta ?? string.Empty;
+    }
+
+    private static string? ExtractMetadataLocation(List<GreenhouseMetadata>? metadata)
+    {
+        const string key = "Job Posting Location";
+        var item = metadata?.FirstOrDefault(m =>
+            string.Equals(m.Name?.Trim(), key, StringComparison.OrdinalIgnoreCase));
+
+        return item?.Value?.Trim() is { Length: > 0 } v ? v : null;
+    }
+
+    private static bool IsRemoteJob(GreenhouseJob job)
+    {
+        var text = $"{job.Location?.Name} {ResolveLocation(job)}".ToLowerInvariant();
+        return text.Contains("remote") || text.Contains("anywhere");
     }
 
     /// <summary>
@@ -258,6 +311,9 @@ public sealed class GreenhouseJobRepository : IJobRepository
         [JsonPropertyName("departments")]
         public List<GreenhouseDepartment>? Departments { get; init; }
 
+        [JsonPropertyName("metadata")]
+        public List<GreenhouseMetadata>? Metadata { get; init; }
+
         [JsonPropertyName("absolute_url")]
         public string? AbsoluteUrl { get; init; }
     }
@@ -272,5 +328,15 @@ public sealed class GreenhouseJobRepository : IJobRepository
     {
         [JsonPropertyName("name")]
         public string? Name { get; init; }
+    }
+
+    private sealed class GreenhouseMetadata
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; init; }
+
+        // value can be a string or array — deserialize as string for simplicity
+        [JsonPropertyName("value")]
+        public string? Value { get; init; }
     }
 }

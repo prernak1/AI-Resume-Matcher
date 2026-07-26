@@ -64,4 +64,8 @@ public sealed class InMemoryJobRepository : IJobRepository
 
     public Task<IReadOnlyList<Job>> GetAllAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(_jobs);
+
+    // Board token is ignored for in-memory data — always returns the same sample set
+    public Task<IReadOnlyList<Job>> GetAllAsync(string boardToken, CancellationToken cancellationToken = default)
+        => Task.FromResult(_jobs);
 }

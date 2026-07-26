@@ -4,12 +4,10 @@ namespace ResumeMatcher.Application.Interfaces;
 
 /// <summary>
 /// Defines the contract for accessing job data.
-///
-/// In Step 1, this returns hardcoded sample jobs.
-/// In Step 3, this will query PostgreSQL via Entity Framework Core.
-/// The Application layer never changes — only the Infrastructure implementation does.
+/// Pass an optional <paramref name="boardToken"/> to override the configured source at request time.
 /// </summary>
 public interface IJobRepository
 {
     Task<IReadOnlyList<Job>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Job>> GetAllAsync(string boardToken, CancellationToken cancellationToken = default);
 }

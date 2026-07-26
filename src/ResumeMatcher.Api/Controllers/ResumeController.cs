@@ -35,6 +35,7 @@ public sealed class ResumeController : ControllerBase
     /// </summary>
     /// <param name="file">PDF file (max 5 MB).</param>
     /// <param name="topN">Number of top matches to return (default 5).</param>
+    /// <param name="company">Optional Greenhouse board token to search (e.g. "airbnb"). Overrides the configured default.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPost("match")]
     [Consumes("multipart/form-data")]
@@ -43,6 +44,7 @@ public sealed class ResumeController : ControllerBase
     public async Task<IActionResult> Match(
         IFormFile file,
         [FromQuery] int topN = 5,
+        [FromQuery] string? company = null,
         CancellationToken cancellationToken = default)
     {
         if (file is null || file.Length == 0)
@@ -69,12 +71,15 @@ public sealed class ResumeController : ControllerBase
         var analysis = await _analyzer.AnalyzeAsync(resumeText, cancellationToken);
 
         // 3. Fetch all jobs and match
-        var jobs = await _jobRepository.GetAllAsync(cancellationToken);
+        var jobs = string.IsNullOrWhiteSpace(company)
+            ? await _jobRepository.GetAllAsync(cancellationToken)
+            : await _jobRepository.GetAllAsync(company.Trim(), cancellationToken);
         var matches = _matcher.Match(analysis, jobs, topN);
 
         // 4. Build response
         var response = new ResumeMatchResponse(
             FileName: file.FileName,
+            Company: string.IsNullOrWhiteSpace(company) ? "(configured default)" : company.Trim(),
             ExtractedTextLength: resumeText.Length,
             Analysis: new ResumeAnalysisDto(
                 Skills: analysis.Skills,
@@ -102,6 +107,7 @@ public sealed class ResumeController : ControllerBase
 
 public sealed record ResumeMatchResponse(
     string FileName,
+    string Company,
     int ExtractedTextLength,
     ResumeAnalysisDto Analysis,
     List<JobMatchDto> TopMatches);
