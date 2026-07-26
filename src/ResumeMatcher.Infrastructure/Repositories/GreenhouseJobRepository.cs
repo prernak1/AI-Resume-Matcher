@@ -149,12 +149,12 @@ public sealed class GreenhouseJobRepository : IJobRepository
 
         return response.Jobs
             .Where(j => !string.IsNullOrWhiteSpace(j.Title))
-            .Select(MapToJob)
+            .Select(j => MapToJob(j, boardToken))
             .ToList()
             .AsReadOnly();
     }
 
-    private static Job MapToJob(GreenhouseJob ghJob)
+    private static Job MapToJob(GreenhouseJob ghJob, string boardToken)
     {
         var plainText = StripHtml(ghJob.Content ?? string.Empty);
         var (required, preferred) = ExtractSkills(plainText);
@@ -181,7 +181,8 @@ public sealed class GreenhouseJobRepository : IJobRepository
             description: desc,
             requiredSkills: required,
             preferredSkills: preferred,
-            applyUrl: ghJob.AbsoluteUrl);
+            applyUrl: ghJob.AbsoluteUrl,
+            source: boardToken);
     }
 
     // ---------------------------------------------------------------

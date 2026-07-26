@@ -251,7 +251,18 @@
       margin-bottom: .75rem;
     }
     .job-title { font-size: 1.05rem; font-weight: 700; color: #1e1b4b; margin-bottom: .2rem; line-height: 1.3; }
-    .job-meta  { font-size: .78rem; color: #9ca3af; }
+    .job-meta  { font-size: .78rem; color: #9ca3af; display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+    .company-badge {
+      display: inline-block;
+      background: #ede9fe;
+      color: #5b21b6;
+      font-size: .68rem;
+      font-weight: 700;
+      padding: .15rem .5rem;
+      border-radius: 6px;
+      text-transform: lowercase;
+      letter-spacing: .03em;
+    }
 
     .match-badge {
       font-size: 1.15rem;
@@ -385,15 +396,15 @@
     <p class="hint">PDF only &nbsp;·&nbsp; Max 5 MB</p>
 
     <div class="company-row">
-      <label for="companyInput">🏢 Greenhouse board token</label>
+      <label for="companyInput">🏢 Greenhouse board tokens</label>
       <input
         type="text"
         id="companyInput"
-        placeholder="e.g. stripe, airbnb, github, shopify"
+        placeholder="stripe, airbnb, shopify, github"
         spellcheck="false"
         autocomplete="off"
       />
-      <span class="company-hint">Find it at <code>boards.greenhouse.io/<strong>{token}</strong></code></span>
+      <span class="company-hint">Comma-separate multiple companies &nbsp;·&nbsp; <code>boards.greenhouse.io/<strong>{token}</strong></code></span>
     </div>
 
     <input type="file" id="fileInput" accept=".pdf" />
@@ -612,12 +623,17 @@
         ? `<a class="btn-apply" href="${esc(job.applyUrl)}" target="_blank" rel="noopener noreferrer">Apply ↗</a>`
         : '';
 
+      // Company badge (source board token)
+      const companyBadge = job.source
+        ? `<span class="company-badge">${esc(job.source)}</span>`
+        : '';
+
       return `
         <div class="job-card" style="animation:fadeUp .35s ease ${i * 0.06}s both">
           <div class="job-card-header">
             <div>
               <div class="job-title">${esc(job.jobTitle)}</div>
-              ${meta ? `<div class="job-meta">${esc(meta)}</div>` : ''}
+              ${meta || companyBadge ? `<div class="job-meta">${companyBadge}${meta ? ` ${esc(meta)}` : ''}</div>` : ''}
             </div>
             <span class="match-badge match-${grade}">${pct}%</span>
           </div>

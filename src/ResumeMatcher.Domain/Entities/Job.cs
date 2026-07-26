@@ -15,6 +15,7 @@ public sealed class Job
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public string? ApplyUrl { get; private set; }
+    public string Source { get; private set; } = string.Empty;   // board token or "sample"
     public List<string> RequiredSkills { get; private set; } = [];
     public List<string> PreferredSkills { get; private set; } = [];
 
@@ -25,7 +26,8 @@ public sealed class Job
         string description,
         List<string> requiredSkills,
         List<string>? preferredSkills = null,
-        string? applyUrl = null)
+        string? applyUrl = null,
+        string source = "")
     {
         return new Job
         {
@@ -33,6 +35,7 @@ public sealed class Job
             Title = title,
             Description = description,
             ApplyUrl = applyUrl,
+            Source = source,
             RequiredSkills = requiredSkills,
             PreferredSkills = preferredSkills ?? []
         };

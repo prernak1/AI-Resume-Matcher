@@ -31,11 +31,11 @@ public sealed class ResumeController : ControllerBase
     }
 
     /// <summary>
-    /// Upload a resume PDF and receive ranked job matches.
+    /// Upload a resume PDF and receive ranked job matches across one or more Greenhouse boards.
     /// </summary>
     /// <param name="file">PDF file (max 5 MB).</param>
-    /// <param name="topN">Number of top matches to return (default 5).</param>
-    /// <param name="company">Optional Greenhouse board token to search (e.g. "airbnb"). Overrides the configured default.</param>
+    /// <param name="topN">Number of top matches to return (default 10).</param>
+    /// <param name="company">Comma-separated Greenhouse board tokens (e.g. "stripe,airbnb,shopify"). Overrides the configured default.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPost("match")]
     [Consumes("multipart/form-data")]
@@ -43,7 +43,7 @@ public sealed class ResumeController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Match(
         IFormFile file,
-        [FromQuery] int topN = 5,
+        [FromQuery] int topN = 10,
         [FromQuery] string? company = null,
         CancellationToken cancellationToken = default)
     {
@@ -67,19 +67,36 @@ public sealed class ResumeController : ControllerBase
         if (string.IsNullOrWhiteSpace(resumeText))
             return BadRequest(new ProblemDetails { Title = "Could not extract any text from the PDF.", Status = 400 });
 
-        // 2. Analyze resume with AI / keyword extraction
+        // 2. Analyze resume
         var analysis = await _analyzer.AnalyzeAsync(resumeText, cancellationToken);
 
-        // 3. Fetch all jobs and match
-        var jobs = string.IsNullOrWhiteSpace(company)
-            ? await _jobRepository.GetAllAsync(cancellationToken)
-            : await _jobRepository.GetAllAsync(company.Trim(), cancellationToken);
+        // 3. Fetch jobs from all requested boards in parallel, then merge
+        var tokens = ParseTokens(company);
+        var sources = tokens.Any() ? string.Join(", ", tokens) : "(configured default)";
+
+        IReadOnlyList<Job> jobs;
+        if (tokens.Count == 0)
+        {
+            jobs = await _jobRepository.GetAllAsync(cancellationToken);
+        }
+        else if (tokens.Count == 1)
+        {
+            jobs = await _jobRepository.GetAllAsync(tokens[0], cancellationToken);
+        }
+        else
+        {
+            // Parallel fetch across all boards, then flatten
+            var tasks = tokens.Select(t => _jobRepository.GetAllAsync(t, cancellationToken));
+            var results = await Task.WhenAll(tasks);
+            jobs = results.SelectMany(r => r).ToList().AsReadOnly();
+        }
+
         var matches = _matcher.Match(analysis, jobs, topN);
 
         // 4. Build response
         var response = new ResumeMatchResponse(
             FileName: file.FileName,
-            Company: string.IsNullOrWhiteSpace(company) ? "(configured default)" : company.Trim(),
+            Company: sources,
             ExtractedTextLength: resumeText.Length,
             Analysis: new ResumeAnalysisDto(
                 Skills: analysis.Skills,
@@ -95,10 +112,19 @@ public sealed class ResumeController : ControllerBase
                 MatchingSkills: m.MatchingSkills,
                 MissingSkills: m.MissingSkills,
                 Reason: m.Reason,
-                ApplyUrl: m.Job.ApplyUrl)).ToList());
+                ApplyUrl: m.Job.ApplyUrl,
+                Source: m.Job.Source)).ToList());
 
         return Ok(response);
     }
+
+    // Parses "stripe, airbnb, shopify" into ["stripe", "airbnb", "shopify"]
+    private static List<string> ParseTokens(string? company)
+        => (company ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(t => t.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 }
 
 // ---------------------------------------------------------------
@@ -127,4 +153,5 @@ public sealed record JobMatchDto(
     List<string> MatchingSkills,
     List<string> MissingSkills,
     string Reason,
-    string? ApplyUrl);
+    string? ApplyUrl,
+    string Source);
