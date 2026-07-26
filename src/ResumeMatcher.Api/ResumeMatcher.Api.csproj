@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>a06bf0c9-1fcc-4001-8996-eac861a19daa</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Swashbuckle generates the Swagger UI and the OpenAPI JSON spec.
+      Every REST API should have this — it is free documentation that
+      tests and visualises your endpoints without needing Postman.
+    -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ResumeMatcher.Application\ResumeMatcher.Application.csproj" />
+    <ProjectReference Include="..\ResumeMatcher.Infrastructure\ResumeMatcher.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

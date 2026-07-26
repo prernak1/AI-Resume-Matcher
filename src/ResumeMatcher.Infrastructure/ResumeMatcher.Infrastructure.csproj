@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!--
+    INFRASTRUCTURE PROJECT
+
+    What it contains:
+    - Implementations of Application interfaces
+    - Database access (EF Core + PostgreSQL) — added in Step 3
+    - OpenAI API calls — added in Step 2
+    - PDF text extraction (PdfPig) — added in Step 2
+    - Sample job data (hardcoded for Step 1)
+
+    It knows about Application (implements its interfaces),
+    but Application never knows about Infrastructure.
+
+    Packages added here in later steps:
+    - Npgsql.EntityFrameworkCore.PostgreSQL (Step 3)
+    - OpenAI (Step 2)
+    - UglyToad.PdfPig (Step 2)
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ResumeMatcher.Application\ResumeMatcher.Application.csproj" />
+  </ItemGroup>
+
+</Project>

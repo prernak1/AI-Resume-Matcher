@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!--
+    APPLICATION PROJECT
+
+    What it contains:
+    - Interfaces that define WHAT the app needs (not HOW it is done)
+    - Use cases (business operations like "upload resume", "match jobs")
+    - DTOs (data shapes for request/response)
+
+    It depends on Domain (to use entities), but never on Infrastructure.
+    Infrastructure depends on Application — not the other way around.
+
+    Packages added here in later steps:
+    - MediatR (CQRS pattern for use cases)
+    - FluentValidation (input validation)
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ResumeMatcher.Domain\ResumeMatcher.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

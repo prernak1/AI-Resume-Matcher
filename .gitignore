@@ -1,0 +1,43 @@
+## .NET build outputs
+bin/
+obj/
+
+## Visual Studio / VS Code
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/
+
+## User Secrets (stored outside the repo — never commit these)
+# On Windows: %APPDATA%\Microsoft\UserSecrets\
+# On Linux/macOS: ~/.microsoft/usersecrets/
+secrets.json
+
+## Environment / local config files — put real secrets here, never commit
+.env
+.env.local
+.env.*.local
+appsettings.Local.json
+
+## Logs and crash dumps
+*.log
+*.dump
+
+## Personal / sample files — do not commit resumes or test data
+*.pdf
+samples/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Test results
+TestResults/
+coverage/
+
+## NuGet
+*.nupkg
+.nuget/
+packages/

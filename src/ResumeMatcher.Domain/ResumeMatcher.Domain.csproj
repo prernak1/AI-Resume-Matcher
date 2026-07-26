@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!--
+    DOMAIN PROJECT — Zero NuGet dependencies.
+
+    This is the most important rule in Clean Architecture.
+    The Domain project contains your business entities and rules.
+    It must never depend on a database, HTTP framework, or any library.
+
+    If you need to add a NuGet package here, stop and reconsider the design.
+    Pure C# classes only.
+  -->
+
+</Project>
