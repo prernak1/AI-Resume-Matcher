@@ -1,0 +1,9 @@
+.dockerignore
+**/bin/
+**/obj/
+**/.vs/
+*.user
+*.pdf
+.git/
+.env
+secrets.json
