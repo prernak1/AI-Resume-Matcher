@@ -14,6 +14,7 @@ public sealed class Job
     public Guid Id { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
+    public string? ApplyUrl { get; private set; }
     public List<string> RequiredSkills { get; private set; } = [];
     public List<string> PreferredSkills { get; private set; } = [];
 
@@ -23,13 +24,15 @@ public sealed class Job
         string title,
         string description,
         List<string> requiredSkills,
-        List<string>? preferredSkills = null)
+        List<string>? preferredSkills = null,
+        string? applyUrl = null)
     {
         return new Job
         {
             Id = Guid.NewGuid(),
             Title = title,
             Description = description,
+            ApplyUrl = applyUrl,
             RequiredSkills = requiredSkills,
             PreferredSkills = preferredSkills ?? []
         };

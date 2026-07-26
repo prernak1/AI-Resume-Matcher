@@ -18,12 +18,42 @@
     header {
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       color: #fff;
-      padding: 2.25rem 1.5rem;
+      padding: 2.5rem 1.5rem 2rem;
       text-align: center;
-      box-shadow: 0 4px 20px rgba(79,70,229,.35);
+      box-shadow: 0 4px 24px rgba(79,70,229,.35);
     }
-    header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: .4rem; }
-    header p  { opacity: .85; font-size: .975rem; }
+    header h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -.5px; margin-bottom: .4rem; }
+    header p  { opacity: .85; font-size: 1rem; margin-bottom: 2rem; }
+
+    /* ── How-it-works steps ── */
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      color: rgba(255,255,255,.9);
+      font-size: .875rem;
+      font-weight: 500;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: .8rem;
+      flex-shrink: 0;
+    }
+    .step-arrow {
+      color: rgba(255,255,255,.4);
+      margin: 0 .75rem;
+      font-size: 1rem;
+    }
 
     /* ── Layout ── */
     .container { max-width: 1140px; margin: 2rem auto; padding: 0 1.5rem; }
@@ -32,20 +62,22 @@
     .upload-zone {
       background: #fff;
       border: 2.5px dashed #a5b4fc;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 3.5rem 2rem;
       text-align: center;
       cursor: pointer;
-      transition: border-color .2s, background .2s;
+      transition: border-color .2s, background .2s, transform .15s;
       margin-bottom: 1.5rem;
     }
     .upload-zone:hover, .upload-zone.drag-over {
       border-color: #4f46e5;
       background: #eef2ff;
+      transform: translateY(-2px);
     }
     .upload-zone .icon  { font-size: 3.25rem; margin-bottom: .9rem; }
-    .upload-zone h2     { font-size: 1.2rem; color: #4f46e5; margin-bottom: .4rem; }
+    .upload-zone h2     { font-size: 1.25rem; color: #4f46e5; font-weight: 700; margin-bottom: .4rem; }
     .upload-zone p      { font-size: .875rem; color: #6b7280; }
+    .upload-zone .hint  { margin-top: .75rem; font-size: .78rem; color: #a5b4fc; }
     #fileInput          { display: none; }
 
     /* ── Error ── */
@@ -63,21 +95,56 @@
     .spinner-wrap {
       display: none;
       background: #fff;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 3rem;
       text-align: center;
       margin-bottom: 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.05);
     }
     .spinner {
-      width: 50px; height: 50px;
+      width: 52px; height: 52px;
       border: 4px solid #e0e7ff;
       border-top-color: #4f46e5;
       border-radius: 50%;
       animation: spin .8s linear infinite;
-      margin: 0 auto 1rem;
+      margin: 0 auto 1.1rem;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner-wrap p { color: #6b7280; font-size: .9rem; }
+    .spinner-wrap p    { color: #6b7280; font-size: .9rem; }
+    .spinner-steps     { display: flex; justify-content: center; gap: 1rem; margin-top: .75rem; }
+    .spinner-step      { font-size: .75rem; color: #a5b4fc; }
+    .spinner-step.done { color: #6366f1; font-weight: 600; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: none;
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      color: #fff;
+      border-radius: 12px;
+      padding: .9rem 1.5rem;
+      margin-bottom: 1.5rem;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .stats-bar.visible { display: flex; animation: fadeUp .4s ease; }
+    .stats-item { display: flex; align-items: center; gap: .4rem; }
+    .stats-num  { font-weight: 800; font-size: 1.1rem; }
+    .btn-reset  {
+      background: rgba(255,255,255,.2);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 8px;
+      padding: .4rem .9rem;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-reset:hover { background: rgba(255,255,255,.3); }
 
     /* ── Results grid ── */
     .results { display: none; gap: 1.5rem; }
@@ -86,7 +153,7 @@
     /* ── Analysis panel ── */
     .analysis-panel {
       background: #fff;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 1.5rem;
       height: fit-content;
       position: sticky;
@@ -102,7 +169,7 @@
     .summary-box {
       background: #f5f3ff;
       border-radius: 9px;
-      padding: .8rem 1rem;
+      padding: .85rem 1rem;
       font-size: .83rem;
       line-height: 1.65;
       color: #4b5563;
@@ -122,7 +189,7 @@
 
     .tags-section { margin-top: 1.15rem; }
     .tags-label {
-      font-size: .72rem;
+      font-size: .7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .06em;
@@ -146,29 +213,29 @@
 
     .job-card {
       background: #fff;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 1.4rem 1.5rem;
       border-left: 4px solid #4f46e5;
       box-shadow: 0 1px 8px rgba(0,0,0,.05);
       transition: box-shadow .2s, transform .15s;
     }
-    .job-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.1); transform: translateY(-2px); }
+    .job-card:hover { box-shadow: 0 6px 28px rgba(0,0,0,.1); transform: translateY(-2px); }
 
     .job-card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 1rem;
-      margin-bottom: .8rem;
+      margin-bottom: .75rem;
     }
-    .job-title { font-size: 1.05rem; font-weight: 700; color: #1e1b4b; margin-bottom: .2rem; }
+    .job-title { font-size: 1.05rem; font-weight: 700; color: #1e1b4b; margin-bottom: .2rem; line-height: 1.3; }
     .job-meta  { font-size: .78rem; color: #9ca3af; }
 
     .match-badge {
       font-size: 1.15rem;
       font-weight: 800;
       white-space: nowrap;
-      padding: .25rem .8rem;
+      padding: .25rem .85rem;
       border-radius: 8px;
       flex-shrink: 0;
     }
@@ -182,11 +249,19 @@
     .bar-mid  { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
     .bar-low  { background: linear-gradient(90deg, #ef4444, #f87171); }
 
-    .reason-text { font-size: .81rem; color: #6b7280; font-style: italic; margin-bottom: .8rem; }
+    .reason-text { font-size: .81rem; color: #6b7280; font-style: italic; margin-bottom: .85rem; line-height: 1.5; }
 
-    .skills-row { display: flex; flex-direction: column; gap: .55rem; }
-    .skill-group .tags-label-sm {
-      font-size: .7rem;
+    .job-card-footer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .skills-row { display: flex; flex-direction: column; gap: .5rem; flex: 1; }
+    .skill-group { }
+    .tags-label-sm {
+      font-size: .69rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .05em;
@@ -197,14 +272,42 @@
     .tag-match { background: #d1fae5; color: #065f46; }
     .tag-miss  { background: #fee2e2; color: #991b1b; }
 
+    .btn-apply {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: #4f46e5;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 9px;
+      padding: .5rem 1.1rem;
+      font-size: .82rem;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: background .15s, transform .1s;
+      flex-shrink: 0;
+    }
+    .btn-apply:hover { background: #4338ca; transform: translateY(-1px); }
+
     .no-results {
       background: #fff;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 2.5rem;
       text-align: center;
       color: #6b7280;
       font-size: .95rem;
     }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #9ca3af;
+      font-size: .8rem;
+      margin-top: 2rem;
+    }
+    footer a { color: #6366f1; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
 
     /* ── Animations ── */
     @keyframes fadeUp {
@@ -213,9 +316,11 @@
     }
 
     /* ── Mobile ── */
-    @media (max-width: 800px) {
+    @media (max-width: 820px) {
       .results.visible { grid-template-columns: 1fr; }
       .analysis-panel  { position: static; }
+      .steps           { gap: .5rem; }
+      .step-arrow      { display: none; }
     }
   </style>
 </head>
@@ -223,7 +328,29 @@
 
 <header>
   <h1>🤖 AI Resume Matcher</h1>
-  <p>Upload your PDF resume — we'll analyse your skills and surface your best-fit live jobs</p>
+  <p>Upload your PDF resume — we'll surface your best-fit live jobs in seconds</p>
+
+  <div class="steps">
+    <div class="step">
+      <span class="step-num">1</span>
+      Upload your resume
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step">
+      <span class="step-num">2</span>
+      AI extracts your skills
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step">
+      <span class="step-num">3</span>
+      Matched against live jobs
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step">
+      <span class="step-num">4</span>
+      Apply with one click
+    </div>
+  </div>
 </header>
 
 <div class="container">
@@ -232,7 +359,8 @@
   <div class="upload-zone" id="uploadZone">
     <div class="icon">📄</div>
     <h2>Drop your resume here</h2>
-    <p>Drag &amp; drop a PDF, or <strong>click to browse</strong> &nbsp;·&nbsp; Max 5 MB</p>
+    <p>Drag &amp; drop a PDF, or <strong>click to browse</strong></p>
+    <p class="hint">PDF only &nbsp;·&nbsp; Max 5 MB</p>
     <input type="file" id="fileInput" accept=".pdf" />
   </div>
 
@@ -241,7 +369,31 @@
   <!-- Loading -->
   <div class="spinner-wrap" id="spinnerWrap">
     <div class="spinner"></div>
-    <p>Extracting skills &amp; matching against live jobs…</p>
+    <p>Analysing your resume and fetching live jobs…</p>
+    <div class="spinner-steps">
+      <span class="spinner-step" id="s1">📄 Extracting text</span>
+      <span class="spinner-step" id="s2">🔍 Detecting skills</span>
+      <span class="spinner-step" id="s3">🎯 Matching jobs</span>
+    </div>
+  </div>
+
+  <!-- Stats bar (shown after results load) -->
+  <div class="stats-bar" id="statsBar">
+    <div style="display:flex;gap:2rem;flex-wrap:wrap">
+      <div class="stats-item">
+        <span class="stats-num" id="statMatches">0</span>
+        <span>jobs matched</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-num" id="statSkills">0</span>
+        <span>skills detected</span>
+      </div>
+      <div class="stats-item">
+        <span class="stats-num" id="statExp">—</span>
+        <span>years experience</span>
+      </div>
+    </div>
+    <button class="btn-reset" id="btnReset">↩ Search again</button>
   </div>
 
   <!-- Results -->
@@ -252,12 +404,20 @@
 
 </div>
 
+<footer>
+  Built with <a href="https://dotnet.microsoft.com" target="_blank">.NET 9</a> &amp;
+  <a href="https://developers.greenhouse.io/job-board.html" target="_blank">Greenhouse Job Board API</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/prernak1/AI-Resume-Matcher" target="_blank">View source on GitHub</a>
+</footer>
+
 <script>
   const uploadZone  = document.getElementById('uploadZone');
   const fileInput   = document.getElementById('fileInput');
   const spinnerWrap = document.getElementById('spinnerWrap');
   const results     = document.getElementById('results');
   const errorBox    = document.getElementById('errorBox');
+  const statsBar    = document.getElementById('statsBar');
 
   /* ── Upload interactions ─────────────────────────────────── */
   uploadZone.addEventListener('click', () => fileInput.click());
@@ -278,6 +438,29 @@
     if (fileInput.files[0]) handleFile(fileInput.files[0]);
   });
 
+  document.getElementById('btnReset').addEventListener('click', () => {
+    hideResults();
+    statsBar.classList.remove('visible');
+    uploadZone.style.display = 'block';
+    fileInput.value = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ── Spinner step animation ──────────────────────────────── */
+  let spinnerTimer;
+  function startSpinnerSteps() {
+    ['s1','s2','s3'].forEach(id => document.getElementById(id).className = 'spinner-step');
+    let i = 0;
+    const ids = ['s1','s2','s3'];
+    spinnerTimer = setInterval(() => {
+      if (i > 0) document.getElementById(ids[i-1]).classList.add('done');
+      if (i < ids.length) document.getElementById(ids[i]).classList.add('done');
+      i++;
+      if (i >= ids.length) clearInterval(spinnerTimer);
+    }, 900);
+  }
+  function stopSpinnerSteps() { clearInterval(spinnerTimer); }
+
   /* ── Core ───────────────────────────────────────────────── */
   async function handleFile(file) {
     if (!file.name.toLowerCase().endsWith('.pdf')) { showError('Only PDF files are accepted.'); return; }
@@ -285,7 +468,10 @@
 
     hideError();
     hideResults();
+    statsBar.classList.remove('visible');
+    uploadZone.style.display = 'none';
     showSpinner();
+    startSpinnerSteps();
 
     const form = new FormData();
     form.append('file', file);
@@ -298,8 +484,10 @@
       }
       renderResults(await res.json());
     } catch (err) {
+      uploadZone.style.display = 'block';
       showError(err.message || 'Something went wrong. Make sure the API is running.');
     } finally {
+      stopSpinnerSteps();
       hideSpinner();
     }
   }
@@ -310,10 +498,17 @@
     renderJobs(data.topMatches);
     results.classList.add('visible');
 
-    // Animate bars after next paint so the transition fires
+    // Stats bar
+    document.getElementById('statMatches').textContent = data.topMatches.length;
+    document.getElementById('statSkills').textContent  = data.analysis.skills.length;
+    document.getElementById('statExp').textContent     =
+      data.analysis.yearsOfExperience > 0 ? data.analysis.yearsOfExperience + '+' : '—';
+    statsBar.classList.add('visible');
+
+    // Animate bars after next paint
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      document.querySelectorAll('.bar[data-pct]').forEach(bar => {
-        bar.style.width = bar.dataset.pct + '%';
+      document.querySelectorAll('.bar[data-pct]').forEach(b => {
+        b.style.width = b.dataset.pct + '%';
       });
     }));
   }
@@ -336,7 +531,7 @@
         <span class="stat-value">${esc(a.education)}</span>
       </div>
 
-      ${tagSection('Skills Detected', a.skills,       'tag-skill')}
+      ${tagSection('Skills Detected', a.skills,        'tag-skill')}
       ${a.technologies.length ? tagSection('Technologies', a.technologies, 'tag-tech') : ''}
       ${tagSection('Suggested Roles', a.suggestedRoles, 'tag-role')}
     `;
@@ -345,7 +540,7 @@
   function renderJobs(jobs) {
     const list = document.getElementById('jobsList');
     if (!jobs.length) {
-      list.innerHTML = '<div class="no-results">No matching jobs found. Try a different resume.</div>';
+      list.innerHTML = '<div class="no-results">No matching jobs found for this resume.<br>Try uploading a different resume or check the Greenhouse board token.</div>';
       return;
     }
 
@@ -353,12 +548,11 @@
       const pct   = job.matchPercentage;
       const grade = pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
 
-      // Parse "(Dept) [Location]" prefix injected by the backend
       const deptM = job.jobDescription.match(/^\(([^)]+)\)/);
       const locM  = job.jobDescription.match(/\[([^\]]+)\]/);
       const dept  = deptM ? deptM[1].replace(/^\d+\s+/, '').trim() : '';
       const loc   = locM  ? locM[1] : '';
-      const meta  = [dept, loc].filter(Boolean).join(' &nbsp;·&nbsp; ');
+      const meta  = [dept, loc].filter(Boolean).join(' · ');
 
       const matchChips = job.matchingSkills.length
         ? `<div class="skill-group">
@@ -372,12 +566,16 @@
              <div class="tags">${job.missingSkills.map(s => `<span class="tag tag-miss">${esc(s)}</span>`).join('')}</div>
            </div>` : '';
 
+      const applyBtn = job.applyUrl
+        ? `<a class="btn-apply" href="${esc(job.applyUrl)}" target="_blank" rel="noopener noreferrer">Apply ↗</a>`
+        : '';
+
       return `
         <div class="job-card" style="animation:fadeUp .35s ease ${i * 0.06}s both">
           <div class="job-card-header">
             <div>
               <div class="job-title">${esc(job.jobTitle)}</div>
-              ${meta ? `<div class="job-meta">${meta}</div>` : ''}
+              ${meta ? `<div class="job-meta">${esc(meta)}</div>` : ''}
             </div>
             <span class="match-badge match-${grade}">${pct}%</span>
           </div>
@@ -388,9 +586,12 @@
 
           <div class="reason-text">${esc(job.reason)}</div>
 
-          <div class="skills-row">
-            ${matchChips}
-            ${missChips}
+          <div class="job-card-footer">
+            <div class="skills-row">
+              ${matchChips}
+              ${missChips}
+            </div>
+            ${applyBtn}
           </div>
         </div>`;
     }).join('');

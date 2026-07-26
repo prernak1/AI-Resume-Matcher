@@ -89,7 +89,8 @@ public sealed class ResumeController : ControllerBase
                 MatchPercentage: m.MatchPercentage,
                 MatchingSkills: m.MatchingSkills,
                 MissingSkills: m.MissingSkills,
-                Reason: m.Reason)).ToList());
+                Reason: m.Reason,
+                ApplyUrl: m.Job.ApplyUrl)).ToList());
 
         return Ok(response);
     }
@@ -119,4 +120,5 @@ public sealed record JobMatchDto(
     int MatchPercentage,
     List<string> MatchingSkills,
     List<string> MissingSkills,
-    string Reason);
+    string Reason,
+    string? ApplyUrl);

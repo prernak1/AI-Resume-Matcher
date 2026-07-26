@@ -163,7 +163,8 @@ public sealed class GreenhouseJobRepository : IJobRepository
             title: ghJob.Title!,
             description: desc,
             requiredSkills: required,
-            preferredSkills: preferred);
+            preferredSkills: preferred,
+            applyUrl: ghJob.AbsoluteUrl);
     }
 
     /// <summary>
