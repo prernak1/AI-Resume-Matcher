@@ -321,6 +321,46 @@
       flex-shrink: 0;
     }
     .btn-apply:hover { background: #4338ca; transform: translateY(-1px); }
+    .btn-tailor {
+      border: 1.5px solid #4f46e5;
+      background: #fff;
+      color: #4f46e5;
+      border-radius: 9px;
+      padding: .5rem 1.1rem;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-tailor:hover { background: #eef2ff; }
+    .btn-tailor:disabled { opacity: .6; cursor: wait; }
+    .job-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+    #daysInput, #locationInput { padding: .4rem .6rem; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: .85rem; }
+
+    .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .6rem .9rem; margin-top: .6rem; }
+    .profile-grid label { display: flex; flex-direction: column; gap: .2rem; font-size: .72rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+    .profile-grid input { padding: .45rem .65rem; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: .88rem; font-weight: 400; text-transform: none; letter-spacing: 0; color: #111827; }
+    .profile-grid input:focus { outline: none; border-color: #4f46e5; }
+    .profile-note { font-size: .76rem; color: #9ca3af; margin-top: .6rem; }
+
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(17,24,39,.55); z-index: 50; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: #fff; border-radius: 16px; padding: 1.5rem; width: min(560px, 100%); max-height: 88vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .modal h3 { font-size: 1.1rem; color: #1e1b4b; margin-bottom: .75rem; }
+    .modal p { font-size: .88rem; color: #4b5563; line-height: 1.5; margin-bottom: .6rem; }
+    .modal ul { margin: .25rem 0 .75rem 1.1rem; font-size: .85rem; color: #374151; }
+    .modal .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: .7rem .9rem; margin-bottom: .75rem; }
+    .modal .warn strong { color: #92400e; font-size: .85rem; }
+    .modal .ok-line { color: #047857; font-size: .85rem; margin-bottom: .6rem; }
+    .modal-actions { display: flex; gap: .5rem; justify-content: flex-end; flex-wrap: wrap; margin-top: .9rem; }
+    .btn-solid { background: #4f46e5; color: #fff; border: none; border-radius: 9px; padding: .55rem 1.15rem; font-size: .85rem; font-weight: 700; cursor: pointer; }
+    .btn-solid:hover { background: #4338ca; }
+    .btn-solid:disabled { opacity: .6; cursor: wait; }
+    .btn-ghost { background: #fff; color: #4b5563; border: 1.5px solid #d1d5db; border-radius: 9px; padding: .55rem 1.15rem; font-size: .85rem; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: #f3f4f6; }
+    .btn-auto { border: none; background: #059669; color: #fff; border-radius: 9px; padding: .5rem 1.1rem; font-size: .82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .btn-auto:hover { background: #047857; }
+    .btn-auto:disabled { opacity: .6; cursor: wait; }
 
     .no-results {
       background: #fff;
@@ -395,16 +435,36 @@
     <p>Drag &amp; drop a PDF, or <strong>click to browse</strong></p>
     <p class="hint">PDF only &nbsp;·&nbsp; Max 5 MB</p>
 
-    <div class="company-row">
-      <label for="companyInput">🏢 Greenhouse board tokens</label>
+    <div class="company-row" onclick="event.stopPropagation()">
+      <label for="companyInput">🏢 Companies <span style="font-weight:400">(optional)</span></label>
       <input
         type="text"
         id="companyInput"
-        placeholder="stripe, airbnb, shopify, github"
+        placeholder="leave empty to search all companies"
         spellcheck="false"
         autocomplete="off"
       />
-      <span class="company-hint">Comma-separate multiple companies &nbsp;·&nbsp; <code>boards.greenhouse.io/<strong>{token}</strong></code></span>
+      <span class="company-hint">Empty = search every company in <code>companies.json</code> (Greenhouse, Lever, Ashby). Or type tokens like <code>stripe, openai, palantir</code></span>
+    </div>
+
+    <div class="company-row" onclick="event.stopPropagation()">
+      <label for="daysInput">🕒 Posted within</label>
+      <select id="daysInput">
+        <option value="0">Any time</option>
+        <option value="1">Last 24 hours</option>
+        <option value="3" selected>Last 3 days</option>
+        <option value="7">Last 7 days</option>
+        <option value="14">Last 14 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+    </div>
+
+    <div class="company-row" onclick="event.stopPropagation()">
+      <label for="locationInput">📍 Location</label>
+      <select id="locationInput">
+        <option value="india" selected>India only</option>
+        <option value="">Anywhere</option>
+      </select>
     </div>
 
     <input type="file" id="fileInput" accept=".pdf" />
@@ -415,7 +475,7 @@
   <!-- Loading -->
   <div class="spinner-wrap" id="spinnerWrap">
     <div class="spinner"></div>
-    <p>Analysing your resume and fetching live jobs…</p>
+    <p>Searching Greenhouse, Lever and Ashby and matching against your resume…</p>
     <div class="spinner-steps">
       <span class="spinner-step" id="s1">📄 Extracting text</span>
       <span class="spinner-step" id="s2">🔍 Detecting skills</span>
@@ -445,8 +505,18 @@
 
   <!-- Results -->
   <div class="results" id="results">
+    <div class="analysis-panel" id="profilePanel"></div>
     <div class="analysis-panel" id="analysisPanel"></div>
     <div class="jobs-list"     id="jobsList"></div>
+  </div>
+
+  <!-- Auto-apply review dialog -->
+  <div class="modal-backdrop" id="applyModal">
+    <div class="modal">
+      <h3 id="applyTitle">Auto-apply</h3>
+      <div id="applyBody"></div>
+      <div class="modal-actions" id="applyActions"></div>
+    </div>
   </div>
 
 </div>
@@ -465,6 +535,18 @@
   const results     = document.getElementById('results');
   const errorBox    = document.getElementById('errorBox');
   const statsBar    = document.getElementById('statsBar');
+  let currentFile = null;
+  let currentJobs = [];
+  let currentProfile = null;
+
+  // Opened as a local file: API calls can't work, so point the user at the server URL
+  if (location.protocol === 'file:') {
+    uploadZone.style.display = 'none';
+    errorBox.innerHTML = 'This page was opened as a local file, so it cannot reach the API. ' +
+      'Start the API (<code>dotnet run</code> in <code>src/ResumeMatcher.Api</code>) and open ' +
+      '<a href="http://localhost:5000/">http://localhost:5000/</a> instead.';
+    errorBox.style.display = 'block';
+  }
 
   /* ── Upload interactions ─────────────────────────────────── */
   uploadZone.addEventListener('click', () => fileInput.click());
@@ -513,6 +595,7 @@
     if (!file.name.toLowerCase().endsWith('.pdf')) { showError('Only PDF files are accepted.'); return; }
     if (file.size > 5 * 1024 * 1024)              { showError('File exceeds the 5 MB limit.'); return; }
 
+    currentFile = file;
     hideError();
     hideResults();
     statsBar.classList.remove('visible');
@@ -524,13 +607,15 @@
     form.append('file', file);
 
     const company = document.getElementById('companyInput').value.trim();
-    const url = `/api/resume/match?topN=10${company ? '&company=' + encodeURIComponent(company) : ''}`;
+    const days = document.getElementById('daysInput').value;
+    const loc  = document.getElementById('locationInput').value;
+    const url = `/api/resume/match?topN=10&postedWithinDays=${days}&location=${encodeURIComponent(loc)}${company ? '&company=' + encodeURIComponent(company) : ''}`;
 
     try {
       const res = await fetch(url, { method: 'POST', body: form });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.title ?? `Server error ${res.status}`);
+        throw new Error(err?.title ?? `Server error ${res.status}. Make sure you opened this page from the API's own URL (e.g. http://localhost:5000), not through a static file server.`);
       }
       renderResults(await res.json());
     } catch (err) {
@@ -544,6 +629,7 @@
 
   /* ── Render ─────────────────────────────────────────────── */
   function renderResults(data) {
+    renderProfile(data.profile);
     renderAnalysis(data.analysis, data.fileName);
     renderJobs(data.topMatches);
     results.classList.add('visible');
@@ -553,9 +639,8 @@
     document.getElementById('statSkills').textContent  = data.analysis.skills.length;
     document.getElementById('statExp').textContent     =
       data.analysis.yearsOfExperience > 0 ? data.analysis.yearsOfExperience + '+' : '—';
-    const companyLabel = data.company && data.company !== '(configured default)'
-      ? data.company : document.getElementById('companyInput').value.trim() || 'jobs';
-    document.getElementById('statCompany').textContent = companyLabel;
+    document.getElementById('statCompany').textContent =
+      `${data.company} (${data.jobsSearched} jobs searched)`;
     statsBar.classList.add('visible');
 
     // Animate bars after next paint
@@ -591,6 +676,7 @@
   }
 
   function renderJobs(jobs) {
+    currentJobs = jobs;
     const list = document.getElementById('jobsList');
     if (!jobs.length) {
       list.innerHTML = '<div class="no-results">No matching jobs found for this resume.<br>Try uploading a different resume or check the Greenhouse board token.</div>';
@@ -622,6 +708,10 @@
       const applyBtn = job.applyUrl
         ? `<a class="btn-apply" href="${esc(job.applyUrl)}" target="_blank" rel="noopener noreferrer">Apply ↗</a>`
         : '';
+      const tailorBtn = `<button class="btn-tailor" onclick="tailorResume(${i}, this)">✨ Tailor resume</button>`;
+      const autoBtn = job.applyUrl
+        ? `<button class="btn-auto" onclick="startAutoApply(${i}, this)">🚀 Auto-apply</button>` : '';
+      const posted = job.postedAt ? ` · ${esc(postedAgo(job.postedAt))}` : '';
 
       // Company badge (source board token)
       const companyBadge = job.source
@@ -633,7 +723,7 @@
           <div class="job-card-header">
             <div>
               <div class="job-title">${esc(job.jobTitle)}</div>
-              ${meta || companyBadge ? `<div class="job-meta">${companyBadge}${meta ? ` ${esc(meta)}` : ''}</div>` : ''}
+              ${meta || companyBadge ? `<div class="job-meta">${companyBadge}${meta ? ` ${esc(meta)}` : ''}${posted}</div>` : ''}
             </div>
             <span class="match-badge match-${grade}">${pct}%</span>
           </div>
@@ -649,13 +739,187 @@
               ${matchChips}
               ${missChips}
             </div>
-            ${applyBtn}
+            <div class="job-actions">${tailorBtn}${autoBtn}${applyBtn}</div>
           </div>
         </div>`;
     }).join('');
   }
 
+  /* ── Profile ─────────────────────────────────────────────── */
+  const PROFILE_FIELDS = [
+    ['fullName', 'Full name'], ['firstName', 'First name'], ['lastName', 'Last name'],
+    ['email', 'Email'], ['phone', 'Phone'], ['location', 'Location (city)'],
+    ['linkedIn', 'LinkedIn URL'], ['gitHub', 'GitHub URL'], ['website', 'Website']
+  ];
+
+  function renderProfile(extracted) {
+    // Corrections the user made earlier win over what was extracted this time
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('rm.profile') || '{}'); } catch { /* ignore */ }
+    currentProfile = { ...extracted };
+    for (const [k] of PROFILE_FIELDS) if (saved[k]) currentProfile[k] = saved[k];
+
+    document.getElementById('profilePanel').innerHTML = `
+      <div class="panel-title">👤 Application profile</div>
+      <div class="profile-note">Taken from your resume. Auto-apply uses these to fill application forms — fix anything that's wrong or missing.</div>
+      <div class="profile-grid">
+        ${PROFILE_FIELDS.map(([k, label]) =>
+          `<label>${label}<input data-profile="${k}" value="${esc(currentProfile[k] || '')}" autocomplete="off" /></label>`).join('')}
+      </div>`;
+
+    document.querySelectorAll('[data-profile]').forEach(inp =>
+      inp.addEventListener('input', () => {
+        currentProfile[inp.dataset.profile] = inp.value.trim();
+        localStorage.setItem('rm.profile', JSON.stringify(currentProfile));
+      }));
+  }
+
+  /* ── Auto-apply (approval based) ─────────────────────────── */
+  const applyModal   = document.getElementById('applyModal');
+  const applyTitle   = document.getElementById('applyTitle');
+  const applyBody    = document.getElementById('applyBody');
+  const applyActions = document.getElementById('applyActions');
+
+  function openModal(title, bodyHtml, actions) {
+    applyTitle.textContent = title;
+    applyBody.innerHTML = bodyHtml;
+    applyActions.innerHTML = '';
+    for (const a of actions) {
+      const b = document.createElement('button');
+      b.className = a.primary ? 'btn-solid' : 'btn-ghost';
+      b.textContent = a.label;
+      b.onclick = () => a.onClick(b);
+      applyActions.appendChild(b);
+    }
+    applyModal.classList.add('open');
+  }
+  function closeModal() { applyModal.classList.remove('open'); }
+
+  function postJson(url, body) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+
+  async function startAutoApply(i, btn) {
+    const job = currentJobs[i];
+    if (!job || !currentFile) return;
+    if (!currentProfile?.email) {
+      showError('Add your email in the Application profile section first.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Preparing…';
+    openModal('Preparing your application…',
+      `<p>Tailoring your resume for <strong>${esc(job.jobTitle)}</strong> and opening the application form in a new browser window. This can take up to a minute.</p>`,
+      []);
+
+    const form = new FormData();
+    form.append('file', currentFile);
+    form.append('applyUrl', job.applyUrl);
+    form.append('jobTitle', job.jobTitle);
+    form.append('company', job.source || '');
+    form.append('jobDescription', job.fullDescription || job.jobDescription);
+    form.append('profile', JSON.stringify(currentProfile));
+    form.append('tailor', 'true');
+
+    try {
+      const res = await fetch('/api/apply/prepare', { method: 'POST', body: form });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.title ?? `Server error ${res.status}`);
+      }
+      showReview(job, await res.json());
+    } catch (err) {
+      openModal('Could not prepare the application', `<p>${esc(err.message)}</p>`,
+        [{ label: 'Close', onClick: closeModal }]);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  function showReview(job, r) {
+    const info = { applyUrl: job.applyUrl, jobTitle: job.jobTitle, company: job.source || '' };
+    const missing = r.missingRequiredFields.length
+      ? `<div class="warn"><strong>⚠ Still needs you (in the browser window):</strong>
+           <ul>${r.missingRequiredFields.map(m => `<li>${esc(m)}</li>`).join('')}</ul>
+           Custom questions, dropdowns, CAPTCHAs and email codes are never filled automatically.</div>`
+      : '<div class="ok-line">✅ No required fields left empty.</div>';
+
+    const body = `
+      <p><strong>${esc(job.jobTitle)}</strong> · ${esc(job.source || '')}</p>
+      <p>A browser window is open with the application form. <strong>Review it there</strong> — nothing has been submitted yet.</p>
+      <p>Filled automatically:</p>
+      <ul>${r.filledFields.map(f => `<li>${esc(f)}</li>`).join('') || '<li>(nothing could be matched)</li>'}</ul>
+      ${missing}
+      ${r.savedResumePath ? `<p class="profile-note">Tailored resume saved to ${esc(r.savedResumePath)}</p>` : ''}
+      <div id="submitMsg"></div>`;
+
+    openModal('Review & approve', body, [
+      { label: 'Cancel', onClick: async () => { await fetch(`/api/apply/${r.sessionId}/cancel`, { method: 'POST' }); closeModal(); } },
+      { label: 'I submitted it myself', onClick: async () => {
+          await postJson(`/api/apply/${r.sessionId}/mark-applied`, info); closeModal(); } },
+      { label: '✅ Approve & submit', primary: true, onClick: async (b) => {
+          b.disabled = true; b.textContent = 'Submitting…';
+          try {
+            const res = await postJson(`/api/apply/${r.sessionId}/submit`, info);
+            const out = await res.json();
+            document.getElementById('submitMsg').innerHTML =
+              `<div class="${out.confirmed ? 'ok-line' : 'warn'}">${esc(out.message)}</div>`;
+            if (out.confirmed) setTimeout(closeModal, 2500);
+          } catch (e) {
+            document.getElementById('submitMsg').innerHTML = `<div class="warn">${esc(e.message)}</div>`;
+          }
+          b.disabled = false; b.textContent = '✅ Approve & submit';
+        } },
+    ]);
+  }
+
   /* ── Helpers ─────────────────────────────────────────────── */
+  function postedAgo(iso) {
+    const hours = (Date.now() - new Date(iso).getTime()) / 36e5;
+    if (hours < 1) return 'posted just now';
+    if (hours < 24) return `posted ${Math.floor(hours)}h ago`;
+    return `posted ${Math.floor(hours / 24)}d ago`;
+  }
+
+  async function tailorResume(i, btn) {
+    const job = currentJobs[i];
+    if (!job || !currentFile) return;
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Tailoring…';
+    hideError();
+
+    const form = new FormData();
+    form.append('file', currentFile);
+    form.append('jobTitle', job.jobTitle);
+    form.append('jobDescription', job.fullDescription || job.jobDescription);
+
+    try {
+      const res = await fetch('/api/resume/tailor', { method: 'POST', body: form });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.title ?? `Server error ${res.status}`);
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Resume_${job.source || 'company'}_${job.jobTitle.replace(/[^a-z0-9]+/gi, '_')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      showError(err.message || 'Could not tailor the resume.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
   function tagSection(label, items, cls) {
     if (!items.length) return '';
     return `

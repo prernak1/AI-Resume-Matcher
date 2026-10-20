@@ -1,0 +1,20 @@
+{
+  "greenhouse": [
+    "stripe", "airbnb", "databricks", "cloudflare", "coinbase", "datadog", "figma", "gitlab",
+    "instacart", "lyft", "pinterest", "reddit", "robinhood", "twilio", "discord", "dropbox",
+    "elastic", "mongodb", "okta", "asana", "brex", "carta", "gusto", "samsara", "toast",
+    "zscaler", "fivetran", "vercel", "squarespace", "rubrik", "nuro", "duolingo", "chime",
+    "affirm", "anthropic", "scaleai", "braze", "mixpanel", "roblox", "wizinc", "newrelic",
+    "launchdarkly", "intercom",
+    "groww", "druva", "slice", "sigmoid"
+  ],
+  "lever": [
+    "palantir", "spotify", "zoox", "shieldai", "binance", "crypto", "sonatype", "cred",
+    "zeta", "mindtickle", "meesho", "paytm"
+  ],
+  "ashby": [
+    "openai", "notion", "ramp", "linear", "supabase", "cursor", "replit", "posthog",
+    "render", "clickhouse", "modal", "anyscale", "cohere", "perplexity",
+    "atlan", "navi"
+  ]
+}

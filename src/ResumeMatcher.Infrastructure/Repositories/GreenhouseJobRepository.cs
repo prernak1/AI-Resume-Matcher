@@ -182,7 +182,11 @@ public sealed class GreenhouseJobRepository : IJobRepository
             requiredSkills: required,
             preferredSkills: preferred,
             applyUrl: ghJob.AbsoluteUrl,
-            source: boardToken);
+            source: boardToken,
+            postedAt: ghJob.FirstPublished ?? ghJob.UpdatedAt,
+            fullDescription: string.IsNullOrWhiteSpace(plainText) ? null : $"{ghJob.Title}. {plainText}",
+            platform: "greenhouse",
+            location: location);
     }
 
     // ---------------------------------------------------------------
@@ -225,7 +229,7 @@ public sealed class GreenhouseJobRepository : IJobRepository
     /// Splits description on a "preferred" section marker, then extracts
     /// skill keywords from each part independently.
     /// </summary>
-    private static (List<string> Required, List<string> Preferred) ExtractSkills(string plainText)
+    internal static (List<string> Required, List<string> Preferred) ExtractSkills(string plainText)
     {
         var markerMatch = PreferredSectionPattern.Match(plainText);
         string requiredPart, preferredPart;
@@ -263,7 +267,7 @@ public sealed class GreenhouseJobRepository : IJobRepository
         return found;
     }
 
-    private static string StripHtml(string html)
+    internal static string StripHtml(string html)
     {
         // Decode entities FIRST — Greenhouse content may use &lt;h2&gt; style encoding.
         // Decoding after stripping would re-introduce tags into the plain text.
@@ -282,7 +286,7 @@ public sealed class GreenhouseJobRepository : IJobRepository
         return Regex.Replace(text, @"\s+", " ").Trim();
     }
 
-    private static string TruncatePlainText(string text, int maxLength)
+    internal static string TruncatePlainText(string text, int maxLength)
         => text.Length <= maxLength ? text : text[..maxLength].TrimEnd() + "...";
 
     // ---------------------------------------------------------------
@@ -317,6 +321,12 @@ public sealed class GreenhouseJobRepository : IJobRepository
 
         [JsonPropertyName("absolute_url")]
         public string? AbsoluteUrl { get; init; }
+
+        [JsonPropertyName("first_published")]
+        public DateTimeOffset? FirstPublished { get; init; }
+
+        [JsonPropertyName("updated_at")]
+        public DateTimeOffset? UpdatedAt { get; init; }
     }
 
     private sealed class GreenhouseLocation

@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="companies.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ResumeMatcher.Application\ResumeMatcher.Application.csproj" />
     <ProjectReference Include="..\ResumeMatcher.Infrastructure\ResumeMatcher.Infrastructure.csproj" />
   </ItemGroup>

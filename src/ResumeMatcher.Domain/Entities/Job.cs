@@ -16,6 +16,10 @@ public sealed class Job
     public string Description { get; private set; } = string.Empty;
     public string? ApplyUrl { get; private set; }
     public string Source { get; private set; } = string.Empty;   // board token or "sample"
+    public DateTimeOffset? PostedAt { get; private set; }
+    public string Platform { get; private set; } = string.Empty;  // greenhouse | lever | ashby | adzuna
+    public string Location { get; private set; } = string.Empty; // all known locations, joined with "; "
+    public string FullDescription { get; private set; } = string.Empty;
     public List<string> RequiredSkills { get; private set; } = [];
     public List<string> PreferredSkills { get; private set; } = [];
 
@@ -27,7 +31,11 @@ public sealed class Job
         List<string> requiredSkills,
         List<string>? preferredSkills = null,
         string? applyUrl = null,
-        string source = "")
+        string source = "",
+        DateTimeOffset? postedAt = null,
+        string? fullDescription = null,
+        string platform = "",
+        string location = "")
     {
         return new Job
         {
@@ -36,6 +44,10 @@ public sealed class Job
             Description = description,
             ApplyUrl = applyUrl,
             Source = source,
+            PostedAt = postedAt,
+            Platform = platform,
+            Location = location,
+            FullDescription = string.IsNullOrWhiteSpace(fullDescription) ? description : fullDescription,
             RequiredSkills = requiredSkills,
             PreferredSkills = preferredSkills ?? []
         };

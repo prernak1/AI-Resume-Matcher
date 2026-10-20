@@ -16,26 +16,37 @@ public sealed class ResumeController : ControllerBase
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly IResumeAnalyzer _analyzer;
     private readonly IJobMatcher _matcher;
-    private readonly IJobRepository _jobRepository;
+    private readonly IJobSearchService _jobSearch;
+    private readonly IProfileExtractor _profileExtractor;
+    private readonly IResumeTailor _tailor;
+    private readonly IResumePdfRenderer _pdfRenderer;
 
     public ResumeController(
         IPdfTextExtractor pdfExtractor,
         IResumeAnalyzer analyzer,
         IJobMatcher matcher,
-        IJobRepository jobRepository)
+        IJobSearchService jobSearch,
+        IProfileExtractor profileExtractor,
+        IResumeTailor tailor,
+        IResumePdfRenderer pdfRenderer)
     {
         _pdfExtractor = pdfExtractor;
         _analyzer = analyzer;
         _matcher = matcher;
-        _jobRepository = jobRepository;
+        _jobSearch = jobSearch;
+        _profileExtractor = profileExtractor;
+        _tailor = tailor;
+        _pdfRenderer = pdfRenderer;
     }
 
     /// <summary>
-    /// Upload a resume PDF and receive ranked job matches across one or more Greenhouse boards.
+    /// Upload a resume PDF and receive ranked job matches across Greenhouse, Lever, Ashby (and Adzuna when configured).
     /// </summary>
     /// <param name="file">PDF file (max 5 MB).</param>
     /// <param name="topN">Number of top matches to return (default 10).</param>
-    /// <param name="company">Comma-separated Greenhouse board tokens (e.g. "stripe,airbnb,shopify"). Overrides the configured default.</param>
+    /// <param name="company">Comma-separated company tokens (e.g. "stripe,openai,palantir"). Leave empty to search every company in companies.json.</param>
+    /// <param name="postedWithinDays">When &gt; 0, only jobs first published within this many days are considered (e.g. 3).</param>
+    /// <param name="location">"india" keeps only India-based jobs. Empty = any location.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPost("match")]
     [Consumes("multipart/form-data")]
@@ -45,55 +56,25 @@ public sealed class ResumeController : ControllerBase
         IFormFile file,
         [FromQuery] int topN = 10,
         [FromQuery] string? company = null,
+        [FromQuery] int postedWithinDays = 0,
+        [FromQuery] string? location = null,
         CancellationToken cancellationToken = default)
     {
-        if (file is null || file.Length == 0)
-            return BadRequest(new ProblemDetails { Title = "No file uploaded.", Status = 400 });
+        var (resumeText, error) = ReadResume(file);
+        if (error is not null) return error;
 
-        if (!file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new ProblemDetails { Title = "Only PDF files are accepted.", Status = 400 });
-
-        const long maxBytes = 5 * 1024 * 1024; // 5 MB
-        if (file.Length > maxBytes)
-            return BadRequest(new ProblemDetails { Title = "File exceeds the 5 MB limit.", Status = 400 });
-
-        // 1. Extract text from PDF
-        string resumeText;
-        using (var stream = file.OpenReadStream())
-        {
-            resumeText = _pdfExtractor.Extract(stream);
-        }
-
-        if (string.IsNullOrWhiteSpace(resumeText))
-            return BadRequest(new ProblemDetails { Title = "Could not extract any text from the PDF.", Status = 400 });
-
-        // 2. Analyze resume
         var analysis = await _analyzer.AnalyzeAsync(resumeText, cancellationToken);
+        var profile = _profileExtractor.Extract(resumeText);
 
-        // 3. Fetch jobs from all requested boards in parallel, then merge
         var tokens = ParseTokens(company);
-        var sources = tokens.Any() ? string.Join(", ", tokens) : "(configured default)";
+        var sources = tokens.Count > 0 ? string.Join(", ", tokens) : "all configured companies";
 
-        IReadOnlyList<Job> jobs;
-        if (tokens.Count == 0)
-        {
-            jobs = await _jobRepository.GetAllAsync(cancellationToken);
-        }
-        else if (tokens.Count == 1)
-        {
-            jobs = await _jobRepository.GetAllAsync(tokens[0], cancellationToken);
-        }
-        else
-        {
-            // Parallel fetch across all boards, then flatten
-            var tasks = tokens.Select(t => _jobRepository.GetAllAsync(t, cancellationToken));
-            var results = await Task.WhenAll(tasks);
-            jobs = results.SelectMany(r => r).ToList().AsReadOnly();
-        }
+        var jobs = await _jobSearch.SearchAsync(
+            new JobSearchRequest(tokens, postedWithinDays, analysis.SuggestedRoles, location),
+            cancellationToken);
 
         var matches = _matcher.Match(analysis, jobs, topN);
 
-        // 4. Build response
         var response = new ResumeMatchResponse(
             FileName: file.FileName,
             Company: sources,
@@ -105,6 +86,8 @@ public sealed class ResumeController : ControllerBase
                 YearsOfExperience: analysis.YearsOfExperience,
                 SuggestedRoles: analysis.SuggestedRoles,
                 Summary: analysis.Summary),
+            Profile: profile,
+            JobsSearched: jobs.Count,
             TopMatches: matches.Select(m => new JobMatchDto(
                 JobTitle: m.Job.Title,
                 JobDescription: m.Job.Description,
@@ -113,9 +96,55 @@ public sealed class ResumeController : ControllerBase
                 MissingSkills: m.MissingSkills,
                 Reason: m.Reason,
                 ApplyUrl: m.Job.ApplyUrl,
-                Source: m.Job.Source)).ToList());
+                Source: m.Job.Source,
+                PostedAt: m.Job.PostedAt,
+                FullDescription: m.Job.FullDescription,
+                Platform: m.Job.Platform)).ToList());
 
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Upload a resume PDF plus a job description and receive a PDF resume tailored to that job.
+    /// Only facts from the original resume are used.
+    /// </summary>
+    [HttpPost("tailor")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Tailor(
+        IFormFile file,
+        [FromForm] string jobTitle,
+        [FromForm] string jobDescription,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(jobDescription))
+            return BadRequest(new ProblemDetails { Title = "A job description is required.", Status = 400 });
+
+        var (resumeText, error) = ReadResume(file);
+        if (error is not null) return error;
+
+        TailoredResume tailored;
+        try
+        {
+            tailored = await _tailor.TailorAsync(resumeText, jobTitle ?? string.Empty, jobDescription, cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new ProblemDetails { Title = ex.Message, Status = 502 });
+        }
+
+        var pdf = _pdfRenderer.Render(tailored);
+        var safeTitle = new string((jobTitle ?? "job").Where(char.IsLetterOrDigit).Take(40).ToArray());
+        return File(pdf, "application/pdf", $"Resume_{(safeTitle.Length > 0 ? safeTitle : "tailored")}.pdf");
+    }
+
+    private (string Text, IActionResult? Error) ReadResume(IFormFile? file)
+    {
+        var (text, problem) = ResumeUpload.Read(file, _pdfExtractor);
+        return (text, problem is null ? null : BadRequest(problem));
     }
 
     // Parses "stripe, airbnb, shopify" into ["stripe", "airbnb", "shopify"]
@@ -136,6 +165,8 @@ public sealed record ResumeMatchResponse(
     string Company,
     int ExtractedTextLength,
     ResumeAnalysisDto Analysis,
+    CandidateProfile Profile,
+    int JobsSearched,
     List<JobMatchDto> TopMatches);
 
 public sealed record ResumeAnalysisDto(
@@ -154,4 +185,7 @@ public sealed record JobMatchDto(
     List<string> MissingSkills,
     string Reason,
     string? ApplyUrl,
-    string Source);
+    string Source,
+    DateTimeOffset? PostedAt,
+    string FullDescription,
+    string Platform);

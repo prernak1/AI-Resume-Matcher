@@ -45,9 +45,28 @@ public static class DependencyInjection
             services.AddSingleton<IJobRepository, InMemoryJobRepository>();
         }
 
+        services.AddHttpClient("OpenAI", client =>
+        {
+            client.BaseAddress = new Uri("https://api.openai.com/");
+            client.Timeout = TimeSpan.FromSeconds(90);
+        });
+
+        // Lever / Ashby / Adzuna job feeds
+        services.AddHttpClient("JobFeeds", client =>
+        {
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
         services.AddSingleton<IPdfTextExtractor, PdfPigTextExtractor>();
         services.AddSingleton<IResumeAnalyzer, KeywordResumeAnalyzer>();
         services.AddSingleton<IJobMatcher, SkillBasedJobMatcher>();
+        services.AddSingleton<IResumeTailor, OpenAiResumeTailor>();
+        services.AddSingleton<IResumePdfRenderer, QuestPdfResumeRenderer>();
+        services.AddSingleton<IJobSearchService, MultiSourceJobSearch>();
+        services.AddSingleton<IProfileExtractor, RegexProfileExtractor>();
+        services.AddSingleton<IApplicationLog, JsonFileApplicationLog>();
+        services.AddSingleton<IApplyAutomation, PlaywrightApplyAutomation>();
 
         return services;
     }

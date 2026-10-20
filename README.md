@@ -112,8 +112,16 @@ All configuration keys and their defaults (in `appsettings.json`):
 |-----|---------|-------------|
 | `Greenhouse:BoardToken` | *(empty)* | Company slug from their Greenhouse URL. Falls back to hardcoded sample jobs when not set. |
 | `Greenhouse:CacheMinutes` | `10` | How long live job data is cached in-memory |
-| `OpenAI:ApiKey` | *(empty)* | Optional — used by a future OpenAI-powered analyzer |
+| `AI:Provider` | `openai` | AI used for resume tailoring: `openai`, `gemini` (free tier), `groq` (free tier) or `github` (GitHub Models) |
+| `AI:ApiKey` | *(empty)* | API key for the chosen provider. Set via user-secrets or the `AI_API_KEY` env var — never commit it. |
+| `AI:Model` / `AI:BaseUrl` | *(provider default)* | Optional overrides, e.g. a different model |
+| `OpenAI:ApiKey` | *(empty)* | Still works when `AI:Provider` is `openai`. Set via user-secrets or `OPENAI_API_KEY` — never commit it. |
 | `OpenAI:Model` | `gpt-4o-mini` | OpenAI model to use |
+| `Jobs:CompaniesFile` | `companies.json` | Company tokens searched when none are typed in the UI (Greenhouse, Lever, Ashby). Edit to add companies. |
+| `Adzuna:AppId` / `Adzuna:AppKey` / `Adzuna:Country` | *(empty)* / *(empty)* / `in` | Optional free keys from developer.adzuna.com — adds keyword search across many job boards |
+| `Apply:BrowserChannel` | *(chrome, then msedge)* | Browser used by auto-apply. Your installed Chrome/Edge is used, so nothing is downloaded. |
+| `Apply:Headless` | `false` | `true` hides the browser window (testing only — you can't review the form) |
+| `Apply:DataDirectory` | `%LOCALAPPDATA%\ResumeMatcher` | Where the applied-jobs log and tailored resumes are saved |
 | `ConnectionStrings:DefaultConnection` | *(empty)* | PostgreSQL — only needed in Step 3 of the roadmap |
 
 > **Finding a board token:** Go to any company's Greenhouse job board URL, e.g. `https://boards.greenhouse.io/`**`airbnb`** — the bold part is the token.
@@ -125,6 +133,12 @@ All configuration keys and their defaults (in `appsettings.json`):
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/api/resume/match` | Upload PDF, get ranked job matches |
+| `POST` | `/api/resume/tailor` | Upload PDF + job description, get a PDF resume tailored to that job |
+| `POST` | `/api/apply/prepare` | Tailor the resume, open the job's application form in your browser and pre-fill it (does **not** submit) |
+| `POST` | `/api/apply/{id}/submit` | Your approval: click Submit in the prepared browser window |
+| `POST` | `/api/apply/{id}/cancel` | Close the prepared window without applying |
+| `POST` | `/api/apply/{id}/mark-applied` | Record that you finished the application by hand |
+| `GET`  | `/api/apply/log` | Every application attempt so far |
 | `GET`  | `/api/health` | Health check |
 | `GET`  | `/health` | ASP.NET health check (used by Docker/k8s) |
 | `GET`  | `/swagger` | Interactive API docs |
@@ -136,7 +150,20 @@ All configuration keys and their defaults (in `appsettings.json`):
 | Field | Type | Description |
 |-------|------|-------------|
 | `file` | PDF | Resume file (max 5 MB) |
-| `topN` | int (query) | Number of top matches to return (default `5`) |
+| `topN` | int (query) | Number of top matches to return (default `10`) |
+| `company` | string (query) | Comma-separated Greenhouse board tokens, e.g. `stripe,airbnb` |
+| `postedWithinDays` | int (query) | Only jobs first published within N days (e.g. `3`). `0` = no filter |
+| `location` | string (query) | `india` keeps only India-based jobs (a posting counts when its location names India or a major Indian city; plain "Remote" does not). Empty = anywhere |
+
+### `POST /api/resume/tailor`
+
+`multipart/form-data` with `file` (resume PDF), `jobTitle` and `jobDescription`. Returns an `application/pdf`. The model is instructed to use only facts already in your resume (no invented skills or experience) — always review the output before sending it.
+
+### Auto-apply (approval based)
+
+Click **🚀 Auto-apply** on a job. The app tailors your resume, opens the application form in a Chrome/Edge window, fills your name, email, phone and links from the editable **Application profile**, and uploads the tailored PDF. It then waits: nothing is submitted until you review the form and click **Approve & submit**.
+
+It does **not** answer custom questions, dropdowns, CAPTCHAs or email-verification steps — those are listed for you to finish in the open window. Jobs you've already applied to are remembered and blocked. Auto-apply needs the API running on your own computer (not Docker). Automating applications may be restricted by some sites' terms — use it for roles you actually want.
 
 **Response** — `200 OK`
 

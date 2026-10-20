@@ -4,6 +4,9 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional git-ignored file for local secrets (e.g. the AI API key)
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 // ---------------------------------------------------------------
 // 1. Register services from each layer
 // ---------------------------------------------------------------

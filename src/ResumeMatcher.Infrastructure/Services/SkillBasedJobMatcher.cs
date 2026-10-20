@@ -1,5 +1,6 @@
 using ResumeMatcher.Application.Interfaces;
 using ResumeMatcher.Domain.Entities;
+using System.Text.RegularExpressions;
 
 namespace ResumeMatcher.Infrastructure.Services;
 
@@ -14,6 +15,34 @@ namespace ResumeMatcher.Infrastructure.Services;
 /// </summary>
 public sealed class SkillBasedJobMatcher : IJobMatcher
 {
+    // The skill bank is tech-only, so non-technical roles that merely mention "SQL" or "Agile"
+    // must not be ranked as matches. Title decides first; skills only break ties for unusual titles.
+    private static readonly Regex NonTechnicalTitle = new(
+        @"\b(sales|account (executive|manager)|marketing|recruit\w*|talent|legal|counsel|attorney|paralegal|finance|financial|accountant|accounting|audit|tax|payroll|people|hr|human resources|customer success|support specialist|operations manager|business development|partnerships?|communications|designer|writer|compliance|risk analyst|strategy)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex TechnicalTitle = new(
+        @"(engineer|developer|software|backend|back-end|full[- ]?stack|devops|\bsre\b|reliability|platform|infrastructure|architect|programmer|machine learning|\bml\b|\bai\b|\bllm\b|cloud|security|systems|\bswe\b|sdet|data (scientist|analyst|engineer))",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex StrongTechnicalTitle = new(
+        @"(software|developer|backend|back-end|full[- ]?stack|devops|\bsre\b|machine learning)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // People-management, executive and pre-sales roles are never a fit for an individual-contributor resume
+    private static readonly Regex ManagementTitle = new(
+        @"\b(director|vp|vice president|head of|chief|manager|managers|fp&a|solutions? (engineer|architect)|sales engineer|business (systems? )?analyst|process automation)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex SeniorIcTitle = new(
+        @"\b(staff|principal|distinguished|fellow)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // Staff/Principal roles need roughly this many years; below it they are stretch roles, not matches
+    private const int SeniorIcMinYears = 7;
+
+    private static readonly Regex EntryLevelTitle = new(
+        @"\b(intern|internship|new grad|graduate program|apprentice|co-?op)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public IReadOnlyList<JobMatch> Match(ResumeAnalysis analysis, IReadOnlyList<Job> jobs, int topN = 5)
     {
         var resumeSkills = new HashSet<string>(
@@ -21,12 +50,29 @@ public sealed class SkillBasedJobMatcher : IJobMatcher
             StringComparer.OrdinalIgnoreCase);
 
         return jobs
+            .Where(j => IsRelevantTitle(j, analysis.YearsOfExperience))
             .Select(job => ScoreJob(job, resumeSkills))
             .Where(m => m.MatchPercentage > 0 && m.MatchingSkills.Count >= 2)
+            // The same role is often posted once per location — keep only the best-scoring copy
+            .GroupBy(m => (m.Job.Source.ToLowerInvariant(), m.Job.Title.ToLowerInvariant()))
+            .Select(g => g.OrderByDescending(m => m.MatchPercentage).First())
             .OrderByDescending(m => m.MatchPercentage)
             .Take(topN)
             .ToList()
             .AsReadOnly();
+    }
+
+    private static bool IsRelevantTitle(Job job, int yearsOfExperience)
+    {
+        if (ManagementTitle.IsMatch(job.Title)) return false;
+
+        // yearsOfExperience == 0 means "not detected" — don't filter on seniority then
+        if (yearsOfExperience is > 0 and < SeniorIcMinYears && SeniorIcTitle.IsMatch(job.Title)) return false;
+        if (yearsOfExperience >= 2 && EntryLevelTitle.IsMatch(job.Title)) return false;
+
+        // "Software Engineer, People Platform" stays; "Strategic Sales Representative" goes
+        if (NonTechnicalTitle.IsMatch(job.Title) && !StrongTechnicalTitle.IsMatch(job.Title)) return false;
+        return TechnicalTitle.IsMatch(job.Title) || job.RequiredSkills.Count >= 3;
     }
 
     private static JobMatch ScoreJob(Job job, HashSet<string> resumeSkills)
